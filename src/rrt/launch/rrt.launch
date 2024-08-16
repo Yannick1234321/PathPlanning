@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="rrt" type="rrt_node" name="rrt_node" output="screen"/>
+
+</launch>
