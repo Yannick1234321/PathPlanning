@@ -1,4 +1,5 @@
 <launch>
+  <node pkg="rviz" type="rviz" name="rviz_rrt" args="-d $(find rrt)launch/defaultConfig.rviz"/>
   <node pkg="rrt" type="rrt_node" name="rrt_node" output="screen"/>
 
 </launch>
