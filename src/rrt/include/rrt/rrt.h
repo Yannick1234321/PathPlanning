@@ -59,5 +59,5 @@ private:
   void createRandomNumber();
   void createRandomNode();
   bool setNodeByStep(int);
-  int getNearestNode();
+  int getNearestNode(Node);
 };

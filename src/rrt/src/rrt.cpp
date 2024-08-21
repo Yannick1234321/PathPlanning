@@ -1,5 +1,5 @@
 #include "rrt.h"
-
+#include <cmath>
 
 RRT::RRT(Point start, Point goal, double step)
 {
@@ -39,7 +39,7 @@ void RRT::plan()
     if (_randomNum >= 0.8)
     {
       double dis;
-      _index = getNearestNode();
+      _index = getNearestNode(_goalNode);
       dis = std::hypot(std::abs(_node_list[_index].position.x - _goalNode.position.x),
                        std::abs(_node_list[_index].position.y - _goalNode.position.y));
       std::cout << LOG << "not finish path planning" << std::endl;
@@ -50,18 +50,9 @@ void RRT::plan()
         _node_list.push_back(_goalNode);
         return;
       }
-
-      double theta = ((_goalNode.position.y - _node_list[_index].position.y) /
-                      (_goalNode.position.x - _node_list[_index].position.x));
-      double x,y,z;
-      x = _node_list[_index].position.x + _step * cos(theta);
-      y = _node_list[_index].position.y + _step * sin(theta);
-
-      //checkObstacle();
-
-      _currentNode.position.x = x;
-      _currentNode.position.y = y;
-      // _currentNode.parent = &_node_list[_index];
+      _currentNode.position.x = _goalNode.position.x;
+      _currentNode.position.y = _goalNode.position.y;
+      _currentNode.position.z = _goalNode.position.z;
 
     }
     else
@@ -71,12 +62,12 @@ void RRT::plan()
       _currentNode.position.y = _randomNodeY;
       _currentNode.position.z = _randomNodeZ;
 
-      _index = getNearestNode();
-      if (setNodeByStep(_index) == false)
+      _index = getNearestNode(_currentNode);
+    }
+    if (setNodeByStep(_index) == false)
       {
         continue;
       }
-    }
     _currentNode.parent = &(_node_list[_index]);
     _node_list.push_back(_currentNode);
     std::cout << LOG << "_currentNode.position.x = " << _currentNode.position.x << std::endl;
@@ -99,7 +90,6 @@ void RRT::broadcastPath()
     p.y = currentNode.position.y;
     p.z = currentNode.position.z;
     std::cout << LOG << (currentNode.parent == 0) << std::endl;
-    // std::cout << LOG << "=====1111====" <<  _node_list[0].parent << std::endl;
     if (currentNode.parent == 0)
     return;
     currentNode = *currentNode.parent;
@@ -108,14 +98,6 @@ void RRT::broadcastPath()
     count--;
   }
   return;
-  // for (short i = 0; i <_node_list.size(); i++)
-  // {
-  //   Point p;
-  //   p.x = _node_list[i].position.x;
-  //   p.y = _node_list[i].position.y;
-  //   p.z = _node_list[i].position.z;
-  //   _path.push_back(p);
-  // }
 
 }
 
@@ -159,8 +141,8 @@ void RRT::createRandomNode()
 
 bool RRT::setNodeByStep(int index)
 {
-  double theta = ((_currentNode.position.y - _node_list[index].position.y) /
-                  (_currentNode.position.x - _node_list[index].position.x));
+  double theta = std::atan2((_currentNode.position.y - _node_list[index].position.y),
+                            (_currentNode.position.x - _node_list[index].position.x));
   std::cout << LOG << "theta = " << theta << std::endl;
   double x,y,z;
   x = _node_list[index].position.x + _step * cos(theta);
@@ -168,8 +150,6 @@ bool RRT::setNodeByStep(int index)
   std::cout << LOG << "cos(thetha) * step = " << _step * cos(theta) << std::endl;
   std::cout << LOG << "sin(thetha) * step = " << _step * sin(theta) << std::endl;
   std::cout << LOG << "x = " << x << ", y = " << y << std::endl;
-  // std::cout << "x = " << (-15.0 <= x <= 15.0) << std::endl;
-  // std::cout << "y = " << (-15.0 <= y <= 15.0) << std::endl;
   //checkObstacle();
   if ((-15.0 <= x) && (x <= 15.0)&&
       (-15.0 <= y) && (y <= 15.0))
@@ -185,15 +165,15 @@ bool RRT::setNodeByStep(int index)
 
 }
 
-int RRT::getNearestNode()
+int RRT::getNearestNode(Node node)
 {
   short index = 0;
   double min_dis = std::numeric_limits<double>::max();
   double dis = std::numeric_limits<double>::max();
   for (short i = 0; i < _node_list.size(); i++)
   {
-    dis = std::hypot(std::abs(_node_list[i].position.x - _currentNode.position.x),
-                    (std::abs(_node_list[i].position.y - _currentNode.position.y)));
+    dis = std::hypot(std::abs(_node_list[i].position.x - node.position.x),
+                    (std::abs(_node_list[i].position.y - node.position.y)));
     if (dis < min_dis)
     {
       min_dis = dis;

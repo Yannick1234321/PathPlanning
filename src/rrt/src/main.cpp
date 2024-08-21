@@ -15,7 +15,7 @@ int main(int argc, char **argv)
   start.y = 0.0;
   goal.x = 10.0;
   goal.y = 10.0;
-  RRT rrtPlanner(start, goal, 1.0);
+  RRT rrtPlanner(start, goal, 0.5);
   rrtPlanner.plan();
   rrtPlanner.broadcastPath();
   rrtPlanner.broadcastAllPath();
