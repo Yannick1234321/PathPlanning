@@ -20,11 +20,13 @@ class RRT
 {
 public:
   std::vector<Point> _path;
+  std::vector<Point> _allPath;
 
   RRT(Point start, Point goal, double step);
   void init(Point start, Point goal);
   void plan();
   void broadcastPath();
+  void broadcastAllPath();
   ~RRT();
 
 private:
@@ -35,6 +37,7 @@ private:
   Node _goalNode;
 
   double _step;
+  int _index;
 
   double _randomNum;
   double _randomNodeX;
@@ -55,5 +58,6 @@ private:
   void checkObstacle();
   void createRandomNumber();
   void createRandomNode();
-  bool setNodeByStep();
+  bool setNodeByStep(int);
+  int getNearestNode();
 };
