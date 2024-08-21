@@ -60,4 +60,5 @@ private:
   void createRandomNode();
   bool setNodeByStep(int);
   int getNearestNode(Node);
+  bool ifArrivedGoal(int index);
 };

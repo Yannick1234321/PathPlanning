@@ -40,15 +40,10 @@ void RRT::plan()
     {
       double dis;
       _index = getNearestNode(_goalNode);
-      dis = std::hypot(std::abs(_node_list[_index].position.x - _goalNode.position.x),
-                       std::abs(_node_list[_index].position.y - _goalNode.position.y));
-      std::cout << LOG << "not finish path planning" << std::endl;
-      if (dis < 2)
+      if (ifArrivedGoal(_index) == true)
       {
-        std::cout << LOG << "finish path planning" << std::endl;
-        _goalNode.parent = &_node_list[_index];
-        _node_list.push_back(_goalNode);
-        return;
+        std::cout << LOG << "find valid path" << std::endl;
+        break;
       }
       _currentNode.position.x = _goalNode.position.x;
       _currentNode.position.y = _goalNode.position.y;
@@ -181,4 +176,18 @@ int RRT::getNearestNode(Node node)
     }
   }
   return index;
+}
+
+bool RRT::ifArrivedGoal(int index)
+{
+  double dis = std::hypot(std::abs(_node_list[index].position.x - _goalNode.position.x),
+                   std::abs(_node_list[index].position.y - _goalNode.position.y));
+  std::cout << LOG << "not finish path planning" << std::endl;
+  if (dis < 2)
+  {
+  std::cout << LOG << "finish path planning" << std::endl;
+  _goalNode.parent = &_node_list[index];
+  _node_list.push_back(_goalNode);
+  return true;
+  }
 }
