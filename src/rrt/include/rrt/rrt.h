@@ -58,7 +58,7 @@ private:
   void checkObstacle();
   void createRandomNumber();
   void createRandomNode();
-  bool setNodeByStep(int);
-  int getNearestNode(Node);
-  bool ifArrivedGoal(int index);
+  bool setNodeByStep(Node);
+  Node getNearestNode(Node);
+  bool ifArrivedGoal(Node);
 };

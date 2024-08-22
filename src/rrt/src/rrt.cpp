@@ -36,11 +36,12 @@ void RRT::plan()
     std::cout << "========================" << std::endl;
     createRandomNumber();
     std::cout << LOG << "_randomNum = " << _randomNum << std::endl;
+    Node nearestNode;
     if (_randomNum >= 0.8)
     {
       double dis;
-      _index = getNearestNode(_goalNode);
-      if (ifArrivedGoal(_index) == true)
+      nearestNode = getNearestNode(_goalNode);
+      if (ifArrivedGoal(nearestNode) == true)
       {
         std::cout << LOG << "find valid path" << std::endl;
         break;
@@ -57,13 +58,14 @@ void RRT::plan()
       _currentNode.position.y = _randomNodeY;
       _currentNode.position.z = _randomNodeZ;
 
-      _index = getNearestNode(_currentNode);
+      nearestNode = getNearestNode(_currentNode);
     }
-    if (setNodeByStep(_index) == false)
-      {
-        continue;
-      }
-    _currentNode.parent = &(_node_list[_index]);
+    Node newNode;
+    if (setNodeByStep(nearestNode) == false)
+    {
+      continue;
+    }
+    _currentNode.parent = &nearestNode;
     _node_list.push_back(_currentNode);
     std::cout << LOG << "_currentNode.position.x = " << _currentNode.position.x << std::endl;
     std::cout << LOG << "_currentNode.position.y = " << _currentNode.position.x << std::endl;
@@ -134,14 +136,14 @@ void RRT::createRandomNode()
   std::cout << LOG << "_randomNodeY = " << _randomNodeY << std::endl;
 }
 
-bool RRT::setNodeByStep(int index)
+bool RRT::setNodeByStep(Node nearestNode)
 {
-  double theta = std::atan2((_currentNode.position.y - _node_list[index].position.y),
-                            (_currentNode.position.x - _node_list[index].position.x));
+  double theta = std::atan2((_currentNode.position.y - nearestNode.position.y),
+                            (_currentNode.position.x - nearestNode.position.x));
   std::cout << LOG << "theta = " << theta << std::endl;
   double x,y,z;
-  x = _node_list[index].position.x + _step * cos(theta);
-  y = _node_list[index].position.y + _step * sin(theta);
+  x = nearestNode.position.x + _step * cos(theta);
+  y = nearestNode.position.y + _step * sin(theta);
   std::cout << LOG << "cos(thetha) * step = " << _step * cos(theta) << std::endl;
   std::cout << LOG << "sin(thetha) * step = " << _step * sin(theta) << std::endl;
   std::cout << LOG << "x = " << x << ", y = " << y << std::endl;
@@ -160,7 +162,7 @@ bool RRT::setNodeByStep(int index)
 
 }
 
-int RRT::getNearestNode(Node node)
+Node RRT::getNearestNode(Node node)
 {
   short index = 0;
   double min_dis = std::numeric_limits<double>::max();
@@ -175,18 +177,18 @@ int RRT::getNearestNode(Node node)
       index = i;
     }
   }
-  return index;
+  return _node_list[index];
 }
 
-bool RRT::ifArrivedGoal(int index)
+bool RRT::ifArrivedGoal(Node nearestNode)
 {
-  double dis = std::hypot(std::abs(_node_list[index].position.x - _goalNode.position.x),
-                   std::abs(_node_list[index].position.y - _goalNode.position.y));
+  double dis = std::hypot(std::abs(nearestNode.position.x - _goalNode.position.x),
+                          std::abs(nearestNode.position.y - _goalNode.position.y));
   std::cout << LOG << "not finish path planning" << std::endl;
   if (dis < 2)
   {
   std::cout << LOG << "finish path planning" << std::endl;
-  _goalNode.parent = &_node_list[index];
+  _goalNode.parent = &nearestNode;
   _node_list.push_back(_goalNode);
   return true;
   }
