@@ -13,7 +13,7 @@ struct Point
 struct Node
 {
   Point position;
-  Node *parent;
+  Node *parent = nullptr;
 };
 
 class RRT
@@ -22,7 +22,7 @@ public:
   std::vector<Point> _path;
   std::vector<Point> _allPath;
 
-  RRT(Point start, Point goal, double step);
+  RRT(Node &start, Node &goal, double step);
   void init(Point start, Point goal);
   void plan();
   void broadcastPath();
@@ -30,11 +30,9 @@ public:
   ~RRT();
 
 private:
-  std::vector<Node> _node_list;
-  Point _start;
-  Point _goal;
-  Node _currentNode;
-  Node _goalNode;
+  std::vector<Node*> _node_list;
+  Node* _startNode;
+  Node* _goalNode;
 
   double _step;
   int _index;
@@ -58,7 +56,7 @@ private:
   void checkObstacle();
   void createRandomNumber();
   void createRandomNode();
-  bool setNodeByStep(Node);
-  Node getNearestNode(Node);
-  bool ifArrivedGoal(Node);
+  bool setNodeByStep(Node*, Node*);
+  Node* getNearestNode(Node*);
+  bool ifArrivedGoal(Node*);
 };

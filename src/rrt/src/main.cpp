@@ -10,11 +10,11 @@ int main(int argc, char **argv)
   ros::Publisher path_pub = n.advertise<nav_msgs::Path>("/path", 1);
   ros::Publisher all_path_pub = n.advertise<nav_msgs::Path>("/allPath", 1);
 
-  Point start, goal;
-  start.x = 0.0;
-  start.y = 0.0;
-  goal.x = 10.0;
-  goal.y = 10.0;
+  Node start, goal;
+  start.position.x = 0.0;
+  start.position.y = 0.0;
+  goal.position.x = 10.0;
+  goal.position.y = 10.0;
   RRT rrtPlanner(start, goal, 0.5);
   rrtPlanner.plan();
   rrtPlanner.broadcastPath();

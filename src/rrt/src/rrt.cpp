@@ -1,13 +1,10 @@
 #include "rrt.h"
 #include <cmath>
 
-RRT::RRT(Point start, Point goal, double step)
+RRT::RRT(Node &start, Node &goal, double step)
 {
-  _start = start;
-  _goal = goal;
-  _currentNode.position = start;
-  _currentNode.parent = 0;
-  _goalNode.position = _goal;
+  _startNode = &start;
+  _goalNode = &goal;
   _step = step;
 }
 RRT::~RRT(){}
@@ -29,14 +26,15 @@ void RRT::checkObstacle()
 
 void RRT::plan()
 {
-  _node_list.push_back(_currentNode);
+  _node_list.push_back(_startNode);
 
   while(1)
   {
     std::cout << "========================" << std::endl;
     createRandomNumber();
     std::cout << LOG << "_randomNum = " << _randomNum << std::endl;
-    Node nearestNode;
+    Node* nearestNode;
+    Node* newNode = new Node;
     if (_randomNum >= 0.8)
     {
       double dis;
@@ -46,50 +44,50 @@ void RRT::plan()
         std::cout << LOG << "find valid path" << std::endl;
         break;
       }
-      _currentNode.position.x = _goalNode.position.x;
-      _currentNode.position.y = _goalNode.position.y;
-      _currentNode.position.z = _goalNode.position.z;
+      newNode->position.x = _goalNode->position.x;
+      newNode->position.y = _goalNode->position.y;
+      newNode->position.z = _goalNode->position.z;
 
     }
     else
     {
       createRandomNode();
-      _currentNode.position.x = _randomNodeX;
-      _currentNode.position.y = _randomNodeY;
-      _currentNode.position.z = _randomNodeZ;
+      newNode->position.x = _randomNodeX;
+      newNode->position.y = _randomNodeY;
+      newNode->position.z = _randomNodeZ;
 
-      nearestNode = getNearestNode(_currentNode);
+      nearestNode = getNearestNode(newNode);
     }
-    Node newNode;
-    if (setNodeByStep(nearestNode) == false)
+
+    if (setNodeByStep(nearestNode, newNode) == false)
     {
       continue;
     }
-    _currentNode.parent = &nearestNode;
-    _node_list.push_back(_currentNode);
-    std::cout << LOG << "_currentNode.position.x = " << _currentNode.position.x << std::endl;
-    std::cout << LOG << "_currentNode.position.y = " << _currentNode.position.x << std::endl;
+    newNode->parent = nearestNode;
+    _node_list.push_back(newNode);
+    std::cout << LOG << "newNode.position.x = " << newNode->position.x << std::endl;
+    std::cout << LOG << "newNode.position.y = " << newNode->position.x << std::endl;
   }
 }
 
 void RRT::broadcastPath()
 {
   int count = _node_list.size();
-  Node currentNode = _goalNode;
-  while (currentNode.parent != nullptr)
+  Node* currentNode = _goalNode;
+  while (currentNode->parent != nullptr)
   {
-    std::cout << LOG << "currentNode.parent = " << currentNode.parent << std::endl;
-    std::cout << LOG << "currentNode.parent->position.x  = " << currentNode.parent->position.x << std::endl;
-    std::cout << LOG << "currentNode.parent->position.y  = " << currentNode.parent->position.y << std::endl;
+    std::cout << LOG << "currentNode.parent = " << currentNode->parent << std::endl;
+    std::cout << LOG << "currentNode.parent->position.x  = " << currentNode->parent->position.x << std::endl;
+    std::cout << LOG << "currentNode.parent->position.y  = " << currentNode->parent->position.y << std::endl;
     std::cout << LOG << "count = " << count << std::endl;
     Point p;
-    p.x = currentNode.position.x;
-    p.y = currentNode.position.y;
-    p.z = currentNode.position.z;
-    std::cout << LOG << (currentNode.parent == 0) << std::endl;
-    if (currentNode.parent == 0)
+    p.x = currentNode->position.x;
+    p.y = currentNode->position.y;
+    p.z = currentNode->position.z;
+    std::cout << LOG << (currentNode->parent == 0) << std::endl;
+    if (currentNode->parent == 0)
     return;
-    currentNode = *currentNode.parent;
+    currentNode = currentNode->parent;
 
     _path.push_back(p);
     count--;
@@ -103,9 +101,9 @@ void RRT::broadcastAllPath()
   for (short i = 0; i < _node_list.size(); i++)
   {
     Point p;
-    p.x = _node_list[i].position.x;
-    p.y = _node_list[i].position.y;
-    p.z = _node_list[i].position.z;
+    p.x = _node_list[i]->position.x;
+    p.y = _node_list[i]->position.y;
+    p.z = _node_list[i]->position.z;
     _allPath.push_back(p);
   }
 
@@ -136,14 +134,14 @@ void RRT::createRandomNode()
   std::cout << LOG << "_randomNodeY = " << _randomNodeY << std::endl;
 }
 
-bool RRT::setNodeByStep(Node nearestNode)
+bool RRT::setNodeByStep(Node* nearestNode, Node* newNode)
 {
-  double theta = std::atan2((_currentNode.position.y - nearestNode.position.y),
-                            (_currentNode.position.x - nearestNode.position.x));
+  double theta = std::atan2((newNode->position.y - nearestNode->position.y),
+                            (newNode->position.x - nearestNode->position.x));
   std::cout << LOG << "theta = " << theta << std::endl;
   double x,y,z;
-  x = nearestNode.position.x + _step * cos(theta);
-  y = nearestNode.position.y + _step * sin(theta);
+  x = nearestNode->position.x + _step * cos(theta);
+  y = nearestNode->position.y + _step * sin(theta);
   std::cout << LOG << "cos(thetha) * step = " << _step * cos(theta) << std::endl;
   std::cout << LOG << "sin(thetha) * step = " << _step * sin(theta) << std::endl;
   std::cout << LOG << "x = " << x << ", y = " << y << std::endl;
@@ -151,8 +149,8 @@ bool RRT::setNodeByStep(Node nearestNode)
   if ((-15.0 <= x) && (x <= 15.0)&&
       (-15.0 <= y) && (y <= 15.0))
   {
-    _currentNode.position.x = x;
-    _currentNode.position.y = y;
+    newNode->position.x = x;
+    newNode->position.y = y;
     std::cout << LOG << "return true" << std::endl;
     return true;
   }
@@ -162,15 +160,15 @@ bool RRT::setNodeByStep(Node nearestNode)
 
 }
 
-Node RRT::getNearestNode(Node node)
+Node* RRT::getNearestNode(Node* node)
 {
   short index = 0;
   double min_dis = std::numeric_limits<double>::max();
   double dis = std::numeric_limits<double>::max();
   for (short i = 0; i < _node_list.size(); i++)
   {
-    dis = std::hypot(std::abs(_node_list[i].position.x - node.position.x),
-                    (std::abs(_node_list[i].position.y - node.position.y)));
+    dis = std::hypot(std::abs(_node_list[i]->position.x - node->position.x),
+                    (std::abs(_node_list[i]->position.y - node->position.y)));
     if (dis < min_dis)
     {
       min_dis = dis;
@@ -180,15 +178,15 @@ Node RRT::getNearestNode(Node node)
   return _node_list[index];
 }
 
-bool RRT::ifArrivedGoal(Node nearestNode)
+bool RRT::ifArrivedGoal(Node* nearestNode)
 {
-  double dis = std::hypot(std::abs(nearestNode.position.x - _goalNode.position.x),
-                          std::abs(nearestNode.position.y - _goalNode.position.y));
+  double dis = std::hypot(std::abs(nearestNode->position.x - _goalNode->position.x),
+                          std::abs(nearestNode->position.y - _goalNode->position.y));
   std::cout << LOG << "not finish path planning" << std::endl;
   if (dis < 2)
   {
   std::cout << LOG << "finish path planning" << std::endl;
-  _goalNode.parent = &nearestNode;
+  _goalNode->parent = nearestNode;
   _node_list.push_back(_goalNode);
   return true;
   }
