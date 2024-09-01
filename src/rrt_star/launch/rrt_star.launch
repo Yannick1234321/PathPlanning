@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="rviz" type="rviz" name="rviz_rrt_star" args="-d $(find rrt_star)launch/defaultConfig.rviz"/>
+  <node pkg="rrt_star" type="rrt_star_node" name="rrt_star_node" output="screen"/>
+
+</launch>
