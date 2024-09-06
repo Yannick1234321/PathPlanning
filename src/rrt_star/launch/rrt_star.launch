@@ -1,5 +1,26 @@
 <launch>
+  <arg name="arg_port"                    default="/dev/ttyUSB0"/>
+  <arg name="start_x"                     default="-76.0" />
+  <arg name="start_y"                     default="-89.0"/>
+  <arg name="goal_x"                      default="56.0"/>
+  <arg name="goal_y"                      default="89.0"/>
+  <arg name="step"                        default="2.0"/>
+  <arg name="size_x_min"                  default="-100.0"/>
+  <arg name="size_x_max"                  default="100.0"/>
+  <arg name="size_y_min"                  default="-100.0"/>
+  <arg name="size_y_max"                  default="100.0"/>
+  <arg name="near_area_radius"            default="3.0"/>
+  <node pkg="rrt_star" type="rrt_star_node" name="rrt_star_node" output="screen">
+    <param name="start_x"          type="double"        value="$(arg start_x)"/>
+    <param name="start_y"          type="double"        value="$(arg start_y)"/>
+    <param name="goal_x"           type="double"        value="$(arg goal_x)"/>
+    <param name="goal_y"           type="double"        value="$(arg goal_y)"/>
+    <param name="step"             type="double"        value="$(arg step)"/>
+    <param name="size_x_min"       type="double"        value="$(arg size_x_min)"/>
+    <param name="size_x_max"       type="double"        value="$(arg size_x_max)"/>
+    <param name="size_y_min"       type="double"        value="$(arg size_y_min)"/>
+    <param name="size_y_max"       type="double"        value="$(arg size_y_max)"/>
+    <param name="near_area_radius" type="double"        value="$(arg near_area_radius)"/>
+  </node>
   <node pkg="rviz" type="rviz" name="rviz_rrt_star" args="-d $(find rrt_star)launch/defaultConfig.rviz"/>
-  <node pkg="rrt_star" type="rrt_star_node" name="rrt_star_node" output="screen"/>
-
 </launch>

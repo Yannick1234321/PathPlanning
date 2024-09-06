@@ -23,7 +23,8 @@ public:
   std::vector<Point> _path;
   std::vector<Point> _allPath;
 
-  RRTSTAR(Node &start, Node &goal, const double step);
+  RRTSTAR(Node &start, Node &goal, const double step, const double size_x_min, const double size_x_max,
+          const double size_y_min, const double size_y_max, const double near_area_raduis);
   void init(Point start, Point goal);
   void plan();
   void broadcastPath();
@@ -36,6 +37,10 @@ private:
   Node* _goalNode;
 
   double _step;
+  double _size_x_min;
+  double _size_x_max;
+  double _size_y_min;
+  double _size_y_max;
   int _index;
   double areaDis = 3;
 

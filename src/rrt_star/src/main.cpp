@@ -10,12 +10,28 @@ int main(int argc, char **argv)
   ros::Publisher path_pub = n.advertise<nav_msgs::Path>("/path", 1);
   ros::Publisher all_path_pub = n.advertise<nav_msgs::Path>("/allPath", 1);
 
+  double start_x, start_y, goal_x, goal_y, step;
+  double size_x_min, size_x_max, size_y_min, size_y_max;
+  double near_area_radius;
+
+  n.param<double>("rrt_star_node/start_x", start_x, 0.0);
+  n.param<double>("rrt_star_node/start_y", start_y, 0.0);
+  n.param<double>("rrt_star_node/goal_x", goal_x, 15.0);
+  n.param<double>("rrt_star_node/goal_y", goal_y, 15.0);
+  n.param<double>("rrt_star_node/step", step, 2.0);
+  n.param<double>("rrt_star_node/size_x_min", size_x_min, -16.0);
+  n.param<double>("rrt_star_node/size_x_max", size_x_max, 16.0);
+  n.param<double>("rrt_star_node/size_y_min", size_y_min, -16.0);
+  n.param<double>("rrt_star_node/size_y_max", size_y_max, 16.0);
+  n.param<double>("rrt_star_node/near_area_radius", near_area_radius, 3.0);
+
+  std::cout << LOG << "start_x = " << start_x << std::endl;
   Node start, goal;
-  start.position.x = -14.9;
-  start.position.y = -14.9;
-  goal.position.x = 14.9;
-  goal.position.y = 14.9;
-  RRTSTAR rrtstarPlanner(start, goal, 1.0);
+  start.position.x = start_x;
+  start.position.y = start_y;
+  goal.position.x = goal_x;
+  goal.position.y = goal_y;
+  RRTSTAR rrtstarPlanner(start, goal, step, size_x_min, size_x_max, size_y_min, size_y_max, near_area_radius);
   rrtstarPlanner.plan();
   rrtstarPlanner.broadcastPath();
   rrtstarPlanner.broadcastAllPath();
@@ -24,7 +40,7 @@ int main(int argc, char **argv)
   path.header.stamp = ros::Time::now();
   std::cout << LOG << "rrtstarPlanner._path.size() = " << rrtstarPlanner._path.size() << std::endl;
   std::cout << LOG << "rrtstarPlanner._allPath.size() = " << rrtstarPlanner._allPath.size() << std::endl;
-  for(short i = 0; i < rrtstarPlanner._path.size(); i++)
+  for(long unsigned int i = 0; i < rrtstarPlanner._path.size(); i++)
   {
     geometry_msgs::PoseStamped p;
     p.header.frame_id = "map";
@@ -34,7 +50,7 @@ int main(int argc, char **argv)
   }
   allPath.header.frame_id = "map";
   allPath.header.stamp = ros::Time::now();
-  for(short i = 0; i < rrtstarPlanner._allPath.size(); i++)
+  for(long unsigned int i = 0; i < rrtstarPlanner._allPath.size(); i++)
   {
     geometry_msgs::PoseStamped p;
     p.header.frame_id = "map";

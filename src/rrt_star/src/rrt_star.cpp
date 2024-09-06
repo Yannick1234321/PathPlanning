@@ -1,11 +1,29 @@
 #include "rrt_star.h"
 #include <cmath>
 
-RRTSTAR::RRTSTAR(Node &start, Node &goal, const double step)
+RRTSTAR::RRTSTAR(Node &start, Node &goal, const double step, const double size_x_min, const double size_x_max,
+                 const double size_y_min, const double size_y_max, const double near_area_raduis)
 {
   _startNode = &start;
   _goalNode = &goal;
   _step = step;
+  _size_x_min = size_x_min;
+  _size_x_max = size_x_max;
+  _size_y_min = size_y_min;
+  _size_y_max = size_y_max;
+  areaDis = near_area_raduis;
+
+  std::cout << LOG << "start.x = " << _startNode->position.x << std::endl;
+  std::cout << LOG << "start.y = " << _startNode->position.y << std::endl;
+  std::cout << LOG << "goal.x = " << _goalNode->position.x << std::endl;
+  std::cout << LOG << "goal.y = " << _goalNode->position.y << std::endl;
+  std::cout << LOG << "_step = " << _step << std::endl;
+  std::cout << LOG << "_size_x_min = " << _size_x_min << std::endl;
+  std::cout << LOG << "_size_x_max = " << _size_x_max << std::endl;
+  std::cout << LOG << "_size_y_min = " << _size_y_min << std::endl;
+  std::cout << LOG << "_size_y_max = " << _size_y_max << std::endl;
+  std::cout << LOG << "areaDis = " << areaDis << std::endl;
+
 }
 RRTSTAR::~RRTSTAR(){}
 
@@ -192,11 +210,12 @@ void RRTSTAR::createRandomNode()
 {
   std::random_device area_rd;
   std::mt19937 area_engine(area_rd());
-  std::uniform_int_distribution<int> area_dis(-150, 150);
+  std::uniform_int_distribution<int> area_dis_x(_size_x_min * 10, _size_x_max * 10);
+  std::uniform_int_distribution<int> area_dis_y(_size_y_min * 10, _size_y_max * 10);
 
-  _randomNodeX = double(area_dis(area_engine))/10;
-  _randomNodeY = double(area_dis(area_engine))/10;
-  _randomNodeZ = double(area_dis(area_engine))/10;
+  _randomNodeX = double(area_dis_x(area_engine))/10;
+  _randomNodeY = double(area_dis_y(area_engine))/10;
+  // _randomNodeZ = double(area_dis(area_engine))/10;
 
   std::cout << LOG << "_randomNodeX = " << _randomNodeX << std::endl;
   std::cout << LOG << "_randomNodeY = " << _randomNodeY << std::endl;
@@ -214,8 +233,8 @@ bool RRTSTAR::setNodeByStep(Node* nearestNode, Node* newNode)
   std::cout << LOG << "sin(thetha) * step = " << _step * sin(theta) << std::endl;
   std::cout << LOG << "x = " << x << ", y = " << y << std::endl;
   //checkObstacle();
-  if ((-15.0 <= x) && (x <= 15.0)&&
-      (-15.0 <= y) && (y <= 15.0))
+  if ((_size_x_min <= x) && (x <= _size_x_max)&&
+      (_size_y_min <= y) && (y <= _size_y_max))
   {
     newNode->position.x = x;
     newNode->position.y = y;
