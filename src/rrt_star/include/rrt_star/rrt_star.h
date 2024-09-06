@@ -14,7 +14,7 @@ struct Node
 {
   Point position;
   Node *parent = nullptr;
-  double cost;
+  double cost = 0;
 };
 
 class RRTSTAR
@@ -37,6 +37,7 @@ private:
 
   double _step;
   int _index;
+  double areaDis = 3;
 
   double _randomNum;
   double _randomNodeX;
@@ -59,7 +60,9 @@ private:
   void createRandomNode();
   bool setNodeByStep(Node*, Node*);
   Node* getNearestNode(Node*);
+  std::vector<int> findNearestIndexs(Node*);
   bool ifArrivedGoal(Node*);
-  bool rewire();
-  bool chooseParent();
+  void rewire(Node*, std::vector<int>);
+  void chooseParent(Node*, std::vector<int>);
+  double calNodeDis(Node*, Node*);
 };

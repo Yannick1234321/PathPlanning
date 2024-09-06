@@ -24,14 +24,68 @@ void RRTSTAR::checkObstacle()
 
 }
 
-bool RRTSTAR::rewire()
+void RRTSTAR::rewire(Node* newNode, std::vector<int> near_idx)
 {
+  for (short i = 0; i < near_idx.size(); i++)
+  {
+    if (_node_list[near_idx[i]]->parent == nullptr)
+    continue;
+    double newNodeAsParentNodeCost = newNode->cost + calNodeDis(_node_list[near_idx[i]], newNode);
+    double origenNodeParentCost = _node_list[near_idx[i]]->cost;
+    std::cout << LOG << "newNodeAsParentNodeCost = " << newNodeAsParentNodeCost << std::endl;
+    std::cout << LOG << "origenNodeParentCost = " << origenNodeParentCost << std::endl;
+    if (newNodeAsParentNodeCost < origenNodeParentCost)
+    {
+      _node_list[near_idx[i]]->parent = newNode;
+      _node_list[near_idx[i]]->cost = newNodeAsParentNodeCost;
+    }
+  }
+}
+
+void RRTSTAR::chooseParent(Node* newNode, std::vector<int> near_idx)
+{
+  double min_cost = std::numeric_limits<double>::max();
+  int min_idx;
+  for (short i = 0; i < near_idx.size(); i++)
+  {
+    double dis = calNodeDis(newNode, _node_list[near_idx[i]]);
+    double all_cost = _node_list[near_idx[i]]->cost + dis;
+
+    std::cout << LOG << "dis = " << dis << std::endl;
+    std::cout << LOG << "_node_list[near_idx[i]]->cost = " << _node_list[near_idx[i]]->cost << std::endl;
+    std::cout << LOG << "all_cost = " << all_cost << std::endl;
+    if (all_cost < min_cost)
+    {
+      min_cost = all_cost;
+      min_idx = near_idx[i];
+    }
+  }
+  std::cout << LOG << "min_cost = " << min_cost << std::endl;
+  std::cout << LOG << "min_idx = " << min_idx << std::endl;
+  newNode->parent = _node_list[min_idx];
+  newNode->cost = min_cost;
 
 }
 
-bool RRTSTAR::chooseParent()
+std::vector<int> RRTSTAR::findNearestIndexs(Node* newNode)
 {
+  std::vector<int> near_idx;
+  for (short i = 0; i < _node_list.size(); i++)
+  {
+    double dis = calNodeDis(newNode, _node_list[i]);
+    if (dis < areaDis)
+    {
+      near_idx.push_back(i);
+    }
+  }
+  return near_idx;
+}
 
+double RRTSTAR::calNodeDis(Node* node1, Node* node2)
+{
+  double dis = std::hypot(std::abs(node1->position.x - node2->position.x),
+                         (std::abs(node1->position.y - node2->position.y)));
+  return dis;
 }
 
 void RRTSTAR::plan()
@@ -73,7 +127,11 @@ void RRTSTAR::plan()
     {
       continue;
     }
-    newNode->parent = nearestNode;
+    std::vector<int> near_idx = findNearestIndexs(newNode);
+
+    chooseParent(newNode, near_idx);
+    rewire(newNode, near_idx);
+    // newNode->parent = nearestNode;
     _node_list.push_back(newNode);
     std::cout << LOG << "newNode.position.x = " << newNode->position.x << std::endl;
     std::cout << LOG << "newNode.position.y = " << newNode->position.x << std::endl;
@@ -183,6 +241,7 @@ Node* RRTSTAR::getNearestNode(Node* node)
     {
       min_dis = dis;
       index = i;
+      node->cost += min_dis;
     }
   }
   return _node_list[index];
