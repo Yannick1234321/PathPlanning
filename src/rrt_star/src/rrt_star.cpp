@@ -223,6 +223,14 @@ void RRTSTAR::createRandomNode()
 
 bool RRTSTAR::setNodeByStep(Node* nearestNode, Node* newNode)
 {
+  if ((calNodeDis(nearestNode, newNode) < _step)&&
+      (_size_x_min <= newNode->position.x)&&
+      (_size_y_min <= newNode->position.y)&&
+      (newNode->position.x <= _size_x_max)&&
+      (newNode->position.y <= _size_y_max))
+  {
+    return true;
+  }
   double theta = std::atan2((newNode->position.y - nearestNode->position.y),
                             (newNode->position.x - nearestNode->position.x));
   std::cout << LOG << "theta = " << theta << std::endl;

@@ -31,8 +31,11 @@ int main(int argc, char **argv)
   start.position.y = start_y;
   goal.position.x = goal_x;
   goal.position.y = goal_y;
+  std::time_t start_t, stop_t;
+  start_t = std::time(NULL);
   RRTSTAR rrtstarPlanner(start, goal, step, size_x_min, size_x_max, size_y_min, size_y_max, near_area_radius);
   rrtstarPlanner.plan();
+  stop_t = std::time(NULL);
   rrtstarPlanner.broadcastPath();
   rrtstarPlanner.broadcastAllPath();
   nav_msgs::Path path, allPath;
@@ -65,6 +68,7 @@ int main(int argc, char **argv)
     path_pub.publish(path);
     all_path_pub.publish(allPath);
     loop_rate.sleep();
+    std::cout << LOG << "cost time = " << (stop_t - start_t) << std::endl;
   }
   return 0;
 }
