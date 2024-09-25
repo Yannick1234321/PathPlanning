@@ -36,11 +36,13 @@ int main(int argc, char **argv)
   n.param<double>("rrt_star_grid_node/start_y", start_y, 0.0);
   n.param<double>("rrt_star_grid_node/goal_x", goal_x, 21.80);
   n.param<double>("rrt_star_grid_node/goal_y", goal_y, 1.5);
-  n.param<double>("rrt_star_grid_node/step", step, 0.1);
+  // n.param<double>("rrt_star_grid_node/step", step, 0.5);
+  n.param<double>("rrt_star_grid_node/step", step, 1.0);
   n.param<double>("rrt_star_grid_node/size_x_min", size_x_min, -30.0);
   n.param<double>("rrt_star_grid_node/size_x_max", size_x_max, 30.0);
   n.param<double>("rrt_star_grid_node/size_y_min", size_y_min, -30.0);
   n.param<double>("rrt_star_grid_node/size_y_max", size_y_max, 30.0);
+  // n.param<double>("rrt_star_grid_node/near_area_radius", near_area_radius, 1.5);
   n.param<double>("rrt_star_grid_node/near_area_radius", near_area_radius, 3.0);
 
   rrtstargridPlanner = new RRTSTARGRID(n, step, near_area_radius);

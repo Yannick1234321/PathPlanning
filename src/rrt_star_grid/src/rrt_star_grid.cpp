@@ -58,7 +58,7 @@ void RRTSTARGRID::resetInitStartGoal()
     delete _node_list[i];
     _node_list[i] = nullptr;
   }
-  
+
   std::cout << "_node_list.capacity() = " << _node_list.capacity() << std::endl;
 
   _node_list.clear();
@@ -193,6 +193,10 @@ void RRTSTARGRID::chooseParent(Node* newNode, std::vector<int> near_idx)
   int min_idx;
   for (long unsigned int i = 0; i < near_idx.size(); i++)
   {
+    if (isObstacleFree(_node_list[near_idx[i]], newNode) == false)
+    {
+      continue;
+    }
     double dis = calNodeDis(newNode, _node_list[near_idx[i]]);
     double all_cost = _node_list[near_idx[i]]->cost + dis;
 
@@ -281,7 +285,7 @@ void RRTSTARGRID::plan()
     std::vector<int> near_idx = findNearestIndexs(newNode);
 
     chooseParent(newNode, near_idx);
-    // rewire(newNode, near_idx);
+    rewire(newNode, near_idx);
     // newNode->parent = nearestNode;
     // Node* cpyNode = new Node(newNode);
     // _node_list.push_back(cpyNode);
