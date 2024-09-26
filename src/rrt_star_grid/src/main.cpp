@@ -3,11 +3,13 @@
 #include "nav_msgs/Path.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "nav_msgs/Odometry.h"
+#include "Bizier.h"
 
 bool mapFlag = false;
 RRTSTARGRID *rrtstargridPlanner;
-nav_msgs::Path path, allPath;
+nav_msgs::Path path, allPath, smoothPath;
 ros::Publisher path_pub;
+ros::Publisher pub_smooth_path;
 void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr msg);
 void startCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr msg);
 void goalCallback(const geometry_msgs::PoseStamped::ConstPtr msg);
@@ -25,6 +27,7 @@ int main(int argc, char **argv)
   ros::Subscriber sub_start = n.subscribe("/initialpose", 1, &startCallback);
   ros::Subscriber sub_goal = n.subscribe("/move_base_simple/goal", 1, &goalCallback);
   path_pub = n.advertise<nav_msgs::Path>("/path", 1);
+  pub_smooth_path = n.advertise<nav_msgs::Path>("/smooth_path", 1);
   ros::Publisher all_path_pub = n.advertise<nav_msgs::Path>("/allPath", 1);
 
   double start_x, start_y, goal_x, goal_y, step;
@@ -36,21 +39,27 @@ int main(int argc, char **argv)
   n.param<double>("rrt_star_grid_node/start_y", start_y, 0.0);
   n.param<double>("rrt_star_grid_node/goal_x", goal_x, 21.80);
   n.param<double>("rrt_star_grid_node/goal_y", goal_y, 1.5);
-  // n.param<double>("rrt_star_grid_node/step", step, 0.5);
-  n.param<double>("rrt_star_grid_node/step", step, 1.0);
+  n.param<double>("rrt_star_grid_node/step", step, 0.5);
+  // n.param<double>("rrt_star_grid_node/step", step, 1.0);
   n.param<double>("rrt_star_grid_node/size_x_min", size_x_min, -30.0);
   n.param<double>("rrt_star_grid_node/size_x_max", size_x_max, 30.0);
   n.param<double>("rrt_star_grid_node/size_y_min", size_y_min, -30.0);
   n.param<double>("rrt_star_grid_node/size_y_max", size_y_max, 30.0);
-  // n.param<double>("rrt_star_grid_node/near_area_radius", near_area_radius, 1.5);
-  n.param<double>("rrt_star_grid_node/near_area_radius", near_area_radius, 3.0);
+  n.param<double>("rrt_star_grid_node/near_area_radius", near_area_radius, 1.5);
+  // n.param<double>("rrt_star_grid_node/near_area_radius", near_area_radius, 3.0);
 
   rrtstargridPlanner = new RRTSTARGRID(n, step, near_area_radius);
 
   ros::Rate loop_rate(1);
+  Bizier bizier(10);
   while (ros::ok())
   {
     path_pub.publish(path);
+    nav_msgs::Path smooth_path;
+    smooth_path.header.frame_id = "map";
+    smooth_path.header.stamp = ros::Time::now();
+    bizier.solve(path, smooth_path);
+    pub_smooth_path.publish(smooth_path);
     // all_path_pub.publish(allPath);
     std::cout << "pub path" << std::endl;
     loop_rate.sleep();

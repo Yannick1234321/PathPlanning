@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(rrt_star_grid)
+project(Bizier)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -7,14 +7,13 @@ project(rrt_star_grid)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-set(OpenCV_DIR "/usr/lib/x86_64-linux-gnu/cmake/opencv4/")
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  rospy
-  nav_msgs
   geometry_msgs
-  OpenCV
+  nav_msgs
+  std_msgs
 )
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -106,8 +105,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES rrt
-#  CATKIN_DEPENDS roscpp rospy
+#  LIBRARIES Bizier
+#  CATKIN_DEPENDS roscpp
 #  DEPENDS system_lib
 )
 
@@ -118,20 +117,20 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include/Bizier
   ${catkin_INCLUDE_DIRS}
-  include/rrt_star_grid/
-  ${CMAKE_CURRENT_SOURCE_DIR}/../Bizier/include/Bizier/
 )
 
-## Declare a C++ library
-add_library(${PROJECT_NAME} SHARED
-  src/rrt_star_grid.cpp
+# Declare a C++ library
+# add_library(crossLine SHARED
+#   src/crossLine.cpp
+# )
+add_library(Bizier SHARED
+  src/Bizier.cpp
 )
 
-## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/rrt.cpp
+# add_library(AuxiliaryPoint SHARED
+#   src/AuxiliaryPoint.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -142,7 +141,7 @@ add_library(${PROJECT_NAME} SHARED
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/main.cpp)
+# add_executable(${PROJECT_NAME}_Curve src/Bizier.cpp )
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -154,12 +153,12 @@ add_executable(${PROJECT_NAME}_node src/main.cpp)
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-# Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_node
-  ${catkin_LIBRARIES}
-  rrt_star_grid
-  Bizier
-)
+## Specify libraries to link a library or executable target against
+# target_link_libraries(${PROJECT_NAME}_Curve
+#   ${catkin_LIBRARIES}
+#   crossLine
+#   Bizier
+# )
 
 #############
 ## Install ##
@@ -208,7 +207,7 @@ target_link_libraries(${PROJECT_NAME}_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_rrt.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_Bizier.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
