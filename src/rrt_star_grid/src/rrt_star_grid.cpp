@@ -6,12 +6,7 @@ RRTSTARGRID::RRTSTARGRID(ros::NodeHandle& nh, const double step, const double ne
   _step = step;
   areaDis = near_area_raduis;
 
-  // std::cout << LOG << "start.x = " << _startNode->position.x << std::endl;
-  // std::cout << LOG << "start.y = " << _startNode->position.y << std::endl;
-  // std::cout << LOG << "goal.x = " << _goalNode->position.x << std::endl;
-  // std::cout << LOG << "goal.y = " << _goalNode->position.y << std::endl;
-  std::cout << LOG << "_step = " << _step << std::endl;
-  std::cout << LOG << "areaDis = " << areaDis << std::endl;
+  std::cout << "step = " << _step << ", areaDis = " << areaDis << std::endl;
 
 }
 RRTSTARGRID::~RRTSTARGRID(){}
@@ -52,19 +47,19 @@ void RRTSTARGRID::resetInitStartGoal()
 {
   _startFlag = false;
   _goalFlag = false;
-  std::cout << "_node_list.capacity() = " << _node_list.capacity() << std::endl;
+  // std::cout << "_node_list.capacity() = " << _node_list.capacity() << std::endl;
   for (long unsigned int i = 0; i < _node_list.size(); i++)
   {
     delete _node_list[i];
     _node_list[i] = nullptr;
   }
 
-  std::cout << "_node_list.capacity() = " << _node_list.capacity() << std::endl;
+  // std::cout << "_node_list.capacity() = " << _node_list.capacity() << std::endl;
 
   _node_list.clear();
-  std::cout << "_node_list.capacity() = " << _node_list.capacity() << std::endl;
+  // std::cout << "_node_list.capacity() = " << _node_list.capacity() << std::endl;
   _node_list.shrink_to_fit();
-  std::cout << "_node_list.capacity() = " << _node_list.capacity() << std::endl;
+  // std::cout << "_node_list.capacity() = " << _node_list.capacity() << std::endl;
   _path.clear();
   _allPath.clear();
 
@@ -232,7 +227,6 @@ double RRTSTARGRID::calNodeDis(Node* node1, Node* node2)
   return dis;
 }
 
-// void RRTSTARGRID::plan(ros::NodeHandle& n)
 void RRTSTARGRID::plan()
 {
   ros::Publisher pub_checked = _n.advertise<nav_msgs::Odometry>("/point_checked", 1);
@@ -240,19 +234,20 @@ void RRTSTARGRID::plan()
 
   while(1)
   {
-    createRandomNumber();
     Node* nearestNode;
-    Node* newNode = new Node;
+    nearestNode = getNearestNode(_goalNode);
+    if (ifArrivedGoal(nearestNode) == true)
+    {
+      std::cout << "find valid path" << std::endl;
+      break;
+    }
 
+    Node* newNode = new Node;
+    createRandomNumber();
 
     if (_randomNum >= 0.9)
     {
-      nearestNode = getNearestNode(_goalNode);
-      if (ifArrivedGoal(nearestNode) == true)
-      {
-        std::cout << LOG << "find valid path" << std::endl;
-        break;
-      }
+
       newNode->position.x = _goalNode->position.x;
       newNode->position.y = _goalNode->position.y;
       newNode->position.z = _goalNode->position.z;
@@ -270,15 +265,15 @@ void RRTSTARGRID::plan()
 
     if (setNodeByStep(nearestNode, newNode) == false)
     {
-      // delete newNode;
-      // newNode = nullptr;
+      delete newNode;
+      newNode = nullptr;
       continue;
     }
 
     if (isObstacleFree(nearestNode, newNode) == false)
     {
-      // delete newNode;
-      // newNode = nullptr;
+      delete newNode;
+      newNode = nullptr;
       continue;
     }
 
@@ -301,7 +296,7 @@ void RRTSTARGRID::plan()
     point.child_frame_id = "base_link";
     pub_checked.publish(point);
   }
-  std::cout << LOG << "find valid path" << std::endl;
+  // std::cout << LOG << "find valid path" << std::endl;
 }
 
 void RRTSTARGRID::broadcastPath()
@@ -448,7 +443,7 @@ void RRTSTARGRID::mapInit(const double resolution,
   _GLX_SIZE = GLX_SIZE;
   _GLY_SIZE = GLY_SIZE;
   _GLXY_SIZE = _GLX_SIZE * _GLY_SIZE;
-  std::cout << "_GLXY_SIZE = " << _GLXY_SIZE << std::endl;
+  // std::cout << "costmap width: " << _GLX_SIZE << ", height: " << _GLY_SIZE <<", size: " << _GLXY_SIZE << std::endl;
   _map = new int[_GLXY_SIZE];
   std::memset(_map, -1, _GLXY_SIZE * sizeof(int));
 

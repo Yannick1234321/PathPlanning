@@ -7,16 +7,12 @@
 
 bool mapFlag = false;
 RRTSTARGRID *rrtstargridPlanner;
-nav_msgs::Path path, allPath, smoothPath;
+nav_msgs::Path path, smoothPath;
 ros::Publisher path_pub;
 ros::Publisher pub_smooth_path;
 void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr msg);
 void startCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr msg);
 void goalCallback(const geometry_msgs::PoseStamped::ConstPtr msg);
-
-// ros::init(argc, argv, "rrt_star_grid_node");
-// ros::NodeHandle* n;
-// ros::NodeHandle n("");
 
 
 int main(int argc, char **argv)
@@ -28,40 +24,30 @@ int main(int argc, char **argv)
   ros::Subscriber sub_goal = n.subscribe("/move_base_simple/goal", 1, &goalCallback);
   path_pub = n.advertise<nav_msgs::Path>("/path", 1);
   pub_smooth_path = n.advertise<nav_msgs::Path>("/smooth_path", 1);
-  ros::Publisher all_path_pub = n.advertise<nav_msgs::Path>("/allPath", 1);
 
-  double start_x, start_y, goal_x, goal_y, step;
-  double size_x_min, size_x_max, size_y_min, size_y_max;
-  double near_area_radius;
+  double step, near_area_radius;
 
 
-  n.param<double>("rrt_star_grid_node/start_x", start_x, -5.5);
-  n.param<double>("rrt_star_grid_node/start_y", start_y, 0.0);
-  n.param<double>("rrt_star_grid_node/goal_x", goal_x, 21.80);
-  n.param<double>("rrt_star_grid_node/goal_y", goal_y, 1.5);
   n.param<double>("rrt_star_grid_node/step", step, 0.5);
   // n.param<double>("rrt_star_grid_node/step", step, 1.0);
-  n.param<double>("rrt_star_grid_node/size_x_min", size_x_min, -30.0);
-  n.param<double>("rrt_star_grid_node/size_x_max", size_x_max, 30.0);
-  n.param<double>("rrt_star_grid_node/size_y_min", size_y_min, -30.0);
-  n.param<double>("rrt_star_grid_node/size_y_max", size_y_max, 30.0);
   n.param<double>("rrt_star_grid_node/near_area_radius", near_area_radius, 1.5);
   // n.param<double>("rrt_star_grid_node/near_area_radius", near_area_radius, 3.0);
 
   rrtstargridPlanner = new RRTSTARGRID(n, step, near_area_radius);
 
   ros::Rate loop_rate(1);
-  Bizier bizier(10);
+  // Bizier bizier(10);
   while (ros::ok())
   {
     path_pub.publish(path);
-    nav_msgs::Path smooth_path;
-    smooth_path.header.frame_id = "map";
-    smooth_path.header.stamp = ros::Time::now();
-    bizier.solve(path, smooth_path);
-    pub_smooth_path.publish(smooth_path);
-    // all_path_pub.publish(allPath);
-    std::cout << "pub path" << std::endl;
+    // nav_msgs::Path smooth_path;
+    // smooth_path.header.frame_id = "map";
+    // smooth_path.header.stamp = ros::Time::now();
+    // bizier.solve(path, smooth_path);
+    // pub_smooth_path.publish(smooth_path);
+    // if (smooth_path.poses.size() != 0)
+    // std::cout << LOG << "smooth_path.size() = " << smooth_path.poses.size() << std::endl;
+    // std::cout << "pub path" << std::endl;
     loop_rate.sleep();
     ros::spinOnce();
   }
@@ -72,19 +58,16 @@ int main(int argc, char **argv)
 void plan()
 {
   std::cout << "Start Planing" << std::endl;
-  std::time_t start_t, stop_t;
-  start_t = std::time(NULL);
+  auto start_time = std::chrono::high_resolution_clock::now();                                      /// start time
   rrtstargridPlanner->plan();
-  stop_t = std::time(NULL);
-  std::cout << LOG << "cost time = " << (stop_t - start_t) << std::endl;
+  auto end_time = std::chrono::high_resolution_clock::now();                                        /// end time
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);     /// calculate duration
+  std::cout << "Planing time = " << duration.count() << " ms" << std::endl;                         /// print duration
   rrtstargridPlanner->broadcastPath();
-  // rrtstargridPlanner->broadcastAllPath();
 
   path.header.frame_id = "map";
   path.header.stamp = ros::Time::now();
 
-  std::cout << LOG << "rrtstargridPlanner->_path.size() = " << rrtstargridPlanner->_path.size() << std::endl;
-  // std::cout << LOG << "rrtstargridPlanner->_allPath.size() = " << rrtstargridPlanner->_allPath.size() << std::endl;
   path.poses.clear();
   for(long unsigned int i = 0; i < rrtstargridPlanner->_path.size(); i++)
   {
@@ -94,16 +77,15 @@ void plan()
     p.pose.position.y = rrtstargridPlanner->_path[i].y;
     path.poses.push_back(p);
   }
-  // allPath.header.frame_id = "map";
-  // allPath.header.stamp = ros::Time::now();
-  // for(long unsigned int i = 0; i < rrtstargridPlanner->_allPath.size(); i++)
-  // {
-  //   geometry_msgs::PoseStamped p;
-  //   p.header.frame_id = "map";
-  //   p.pose.position.x = rrtstargridPlanner->_allPath[i].x;
-  //   p.pose.position.y = rrtstargridPlanner->_allPath[i].y;
-  //   allPath.poses.push_back(p);
-  // }
+  Bizier bizier(10);
+  nav_msgs::Path smooth_path;
+  smooth_path.header.frame_id = "map";
+  smooth_path.header.stamp = ros::Time::now();
+  bizier.solve(path, smooth_path);
+  pub_smooth_path.publish(smooth_path);
+  if (smooth_path.poses.size() != 0)
+  std::cout << "origin_path.size() = " << rrtstargridPlanner->_path.size() << std::endl;
+  std::cout << "smooth_path.size() = " << smooth_path.poses.size() << std::endl;
 
 }
 void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr msg)
@@ -118,8 +100,8 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr msg)
                               msg->info.width,
                               msg->info.height);
 
-  std::cout << "msg->info.height = " << msg->info.height << std::endl;
-  std::cout << "msg->info.width = " << msg->info.width << std::endl;
+  // std::cout << "msg->info.height = " << msg->info.height << std::endl;
+  // std::cout << "msg->info.width = " << msg->info.width << std::endl;
 
   for (unsigned int height = 0; height < msg->info.height; height++)
   {
@@ -133,7 +115,7 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr msg)
     }
   }
 
-  std::cout << LOG << "Finished inputting Map" << std::endl;
+  std::cout << "Finished Initializing Map"<< ", costmap width: " << msg->info.width << ", height: " << msg->info.height <<", size: " << msg->info.width*msg->info.height << std::endl;
 
   rrtstargridPlanner->setMapFlag();
 }
@@ -165,44 +147,3 @@ void goalCallback(const geometry_msgs::PoseStamped::ConstPtr msg)
   }
 
 }
-
-
-// int main(int argc, char **argv)
-// {
-//   // ros::init(argc, argv, "rrt_star_grid_node");
-//   // ros::NodeHandle n("");
-//   ros::Subscriber map_sub = n.subscribe("/map", 1, &mapCallback);
-//   ros::Subscriber sub_start = n.subscribe("/initialpose", 1, &startCallback);
-//   ros::Subscriber sub_goal = n.subscribe("/move_base_simple/goal", 1, &goalCallback);
-//   path_pub = n.advertise<nav_msgs::Path>("/path", 1);
-//   ros::Publisher all_path_pub = n.advertise<nav_msgs::Path>("/allPath", 1);
-
-//   double start_x, start_y, goal_x, goal_y, step;
-//   double size_x_min, size_x_max, size_y_min, size_y_max;
-//   double near_area_radius;
-
-
-//   n.param<double>("rrt_star_grid_node/start_x", start_x, -5.5);
-//   n.param<double>("rrt_star_grid_node/start_y", start_y, 0.0);
-//   n.param<double>("rrt_star_grid_node/goal_x", goal_x, 21.80);
-//   n.param<double>("rrt_star_grid_node/goal_y", goal_y, 1.5);
-//   n.param<double>("rrt_star_grid_node/step", step, 0.1);
-//   n.param<double>("rrt_star_grid_node/size_x_min", size_x_min, -30.0);
-//   n.param<double>("rrt_star_grid_node/size_x_max", size_x_max, 30.0);
-//   n.param<double>("rrt_star_grid_node/size_y_min", size_y_min, -30.0);
-//   n.param<double>("rrt_star_grid_node/size_y_max", size_y_max, 30.0);
-//   n.param<double>("rrt_star_grid_node/near_area_radius", near_area_radius, 3.0);
-
-//   rrtstargridPlanner = new RRTSTARGRID(step, near_area_radius);
-
-//   ros::Rate loop_rate(1);
-//   while (ros::ok())
-//   {
-//     path_pub.publish(path);
-//     // all_path_pub.publish(allPath);
-//     std::cout << "pub path" << std::endl;
-//     loop_rate.sleep();
-//     ros::spinOnce();
-//   }
-//   return 0;
-// }

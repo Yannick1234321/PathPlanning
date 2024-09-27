@@ -13,6 +13,8 @@
 #include <ros/ros.h>
 #include "nav_msgs/Odometry.h"
 #include <malloc.h>
+#include <chrono>
+#include "inflation_layer.h"
 
 
 #define LOG "[" << __FUNCTION__ << "][" << __LINE__ << "]"
@@ -75,10 +77,8 @@ public:
   std::vector<Point> _allPath;
 
   RRTSTARGRID(ros::NodeHandle& n, const double step, const double near_area_raduis);
-  // RRTSTARGRID(Node &start, Node &goal, const double step, const double near_area_raduis);
   void init(Point start, Point goal);
   void plan();
-  // void plan(ros::NodeHandle& n);
   void broadcastPath();
   void broadcastAllPath();
   void mapInit(const double resolution,
@@ -101,7 +101,6 @@ public:
 private:
   ros::NodeHandle _n;
   std::vector<Node*> _node_list;
-  // Node* newNode;
   Node* _startNode = new Node;
   Node* _goalNode = new Node;
   bool _startFlag = false;
