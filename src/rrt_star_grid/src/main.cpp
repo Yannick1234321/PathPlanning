@@ -4,15 +4,18 @@
 #include "geometry_msgs/PoseStamped.h"
 #include "nav_msgs/Odometry.h"
 #include "Bizier.h"
+#include <tf/tf.h>
 
 bool mapFlag = false;
 RRTSTARGRID *rrtstargridPlanner;
 nav_msgs::Path path, smoothPath;
 ros::Publisher path_pub;
 ros::Publisher pub_smooth_path;
+nav_msgs::Odometry global_odom;
 void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr msg);
 void startCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr msg);
 void goalCallback(const geometry_msgs::PoseStamped::ConstPtr msg);
+void odomCallback(const nav_msgs::Odometry::ConstPtr msg);
 
 
 int main(int argc, char **argv)
@@ -21,6 +24,7 @@ int main(int argc, char **argv)
   ros::NodeHandle n("");
   ros::Subscriber map_sub = n.subscribe("/map", 1, &mapCallback);
   ros::Subscriber sub_start = n.subscribe("/initialpose", 1, &startCallback);
+  ros::Subscriber sub_odom = n.subscribe("/ground_truth/state", 1, &odomCallback);
   ros::Subscriber sub_goal = n.subscribe("/move_base_simple/goal", 1, &goalCallback);
   path_pub = n.advertise<nav_msgs::Path>("/path", 1);
   pub_smooth_path = n.advertise<nav_msgs::Path>("/smooth_path", 1);
@@ -39,7 +43,7 @@ int main(int argc, char **argv)
   // Bizier bizier(10);
   while (ros::ok())
   {
-    path_pub.publish(path);
+    // path_pub.publish(path);
     // nav_msgs::Path smooth_path;
     // smooth_path.header.frame_id = "map";
     // smooth_path.header.stamp = ros::Time::now();
@@ -69,15 +73,32 @@ void plan()
   path.header.stamp = ros::Time::now();
 
   path.poses.clear();
-  for(long unsigned int i = 0; i < rrtstargridPlanner->_path.size(); i++)
+  for(int i = (rrtstargridPlanner->_path.size() -1); i >= 0; i--)//因为存储目标时是从终点到起点的，所以这里要倒序存储
   {
     geometry_msgs::PoseStamped p;
     p.header.frame_id = "map";
     p.pose.position.x = rrtstargridPlanner->_path[i].x;
     p.pose.position.y = rrtstargridPlanner->_path[i].y;
+    //赋值方向
+    if (i != 0)       //如果不是最后一个点，则计算方向
+    {
+      double dx = rrtstargridPlanner->_path[i-1].x - rrtstargridPlanner->_path[i].x;
+      double dy = rrtstargridPlanner->_path[i-1].y - rrtstargridPlanner->_path[i].y;
+      double theta = atan2(dy, dx);
+      //欧拉角转四元数
+      tf::Quaternion q = tf::createQuaternionFromYaw(theta);
+      p.pose.orientation.x = q.x();
+      p.pose.orientation.y = q.y();
+      p.pose.orientation.z = q.z();
+      p.pose.orientation.w = q.w();
+    }
+    else            //如果是最后一个点，则方向为goalNode的方向
+    {
+      //今后，这里要修改Point结构体，添加方向信息，然后在这里赋值
+    }
     path.poses.push_back(p);
   }
-  Bizier bizier(10);
+  Bizier bizier(20);
   nav_msgs::Path smooth_path;
   smooth_path.header.frame_id = "map";
   smooth_path.header.stamp = ros::Time::now();
@@ -90,6 +111,11 @@ void plan()
 }
 void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr msg)
 {
+  // if (rrtstargridPlanner->isInitFinished() == true)
+  // {
+  //   std::cout << "Map already initialized" << std::endl;
+  //   return;
+  // }
   rrtstargridPlanner->mapInit(msg->info.resolution,
                               msg->info.origin.position.x,
                               msg->info.origin.position.y,
@@ -119,6 +145,10 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr msg)
 
   rrtstargridPlanner->setMapFlag();
 }
+void odomCallback(const nav_msgs::Odometry::ConstPtr msg)
+{
+  global_odom = *msg;
+}
 
 void startCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr msg)
 {
@@ -126,15 +156,21 @@ void startCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr msg)
   start.position.x = msg->pose.pose.position.x;
   start.position.y = msg->pose.pose.position.y;
   rrtstargridPlanner->setStartPoint(start);
-  // if (rrtstargridPlanner->isInitFinished() == true)
-  // {
-  //   plan();
-  //   rrtstargridPlanner->resetInitStartGoal();
-  // }
+  if (rrtstargridPlanner->isInitFinished() == true)
+  {
+    plan();
+    path_pub.publish(path);
+    rrtstargridPlanner->resetInitStartGoal();
+  }
 
 }
 void goalCallback(const geometry_msgs::PoseStamped::ConstPtr msg)
 {
+  Node start;
+  start.position.x = global_odom.pose.pose.position.x;
+  start.position.y = global_odom.pose.pose.position.y;
+  rrtstargridPlanner->setStartPoint(start);
+
   Node goal;
   goal.position.x = msg->pose.position.x;
   goal.position.y = msg->pose.position.y;

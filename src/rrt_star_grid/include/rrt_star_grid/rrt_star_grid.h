@@ -15,6 +15,8 @@
 #include <malloc.h>
 #include <chrono>
 #include "inflation_layer.h"
+#include <thread>
+#include <memory>
 
 
 #define LOG "[" << __FUNCTION__ << "][" << __LINE__ << "]"
@@ -95,14 +97,16 @@ public:
   void setGoal(Node& goal);
   void resetInitStartGoal();
   void setMapFlag();
+  bool isMapFinished();
   bool isInitFinished();
+  void setInflationLayer(InflationLayer* inflation_layer);
   ~RRTSTARGRID();
 
 private:
   ros::NodeHandle _n;
   std::vector<Node*> _node_list;
-  Node* _startNode = new Node;
-  Node* _goalNode = new Node;
+  Node* _startNode = nullptr;
+  Node* _goalNode = nullptr;
   bool _startFlag = false;
   bool _goalFlag = false;
   bool _mapFlag = false;
@@ -131,6 +135,10 @@ private:
   int _width;
   int _height;
 
+  // inflation layer
+  // std::thread _inflation_thread;
+  InflationLayer* _inflation_layer;
+  void inflationThread();
 
 
   // 随机函数产生的是一种伪随机数，它实际是一种序列发生器，有固定的算法，只有当种子不同时，序列才不同，
@@ -155,9 +163,14 @@ private:
   double calNodeDis(Node*, Node*);
   GridPosition nodeRasterized(Node*);
   void pgmToOccupancyGrid(const std::string& pgm_file, nav_msgs::OccupancyGrid& grid);
+  void initStartNode();
+  void initGoalNode();
   //栅格化rasterize
   Eigen::Vector2i coord2gridIndex(const Eigen::Vector2d);
   Eigen::Vector2d gridIndex2coord(const Eigen::Vector2i);
+
+  //递归释放内存
+  void releaseNodeList();
 };
 
 

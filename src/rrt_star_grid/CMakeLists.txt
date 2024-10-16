@@ -121,12 +121,16 @@ include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
   include/rrt_star_grid/
-  ${CMAKE_CURRENT_SOURCE_DIR}/../Bizier/include/Bizier/
+  ${CMAKE_CURRENT_SOURCE_DIR}/../bizier/include/Bizier/
 )
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME} SHARED
   src/rrt_star_grid.cpp
+)
+
+add_library(inflation_layer SHARED
+  src/inflation_layer.cpp
 )
 
 ## Declare a C++ library
@@ -159,6 +163,8 @@ target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
   rrt_star_grid
   Bizier
+  inflation_layer
+
 )
 
 #############

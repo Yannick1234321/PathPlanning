@@ -6,17 +6,74 @@ RRTSTARGRID::RRTSTARGRID(ros::NodeHandle& nh, const double step, const double ne
   _step = step;
   areaDis = near_area_raduis;
 
+  std::thread inflation_thread(&RRTSTARGRID::inflationThread, this);
+  inflation_thread.detach();
+
   std::cout << "step = " << _step << ", areaDis = " << areaDis << std::endl;
 
 }
 RRTSTARGRID::~RRTSTARGRID(){}
 
+void RRTSTARGRID::inflationThread()
+{
+  if (_mapFlag == false)
+  {
+    sleep(2);
+  }
+  ros::Publisher pub_inflation = _n.advertise<nav_msgs::OccupancyGrid>("/inflation_map", 1);
+
+  _inflation_layer = new InflationLayer(_map, 10, _GLX_SIZE, _GLY_SIZE, 0.1, _resolution);
+  _inflation_layer->OnUpdate();
+  nav_msgs::OccupancyGrid map_msg;
+  map_msg.header.frame_id = "map";
+  map_msg.info.resolution = _resolution;
+  map_msg.info.width = _GLX_SIZE;
+  map_msg.info.height = _GLY_SIZE;
+  map_msg.info.origin.position.x = -_GLX_SIZE / 2 * _resolution;
+  map_msg.info.origin.position.y = -_GLY_SIZE / 2 * _resolution;
+  map_msg.info.origin.orientation.w = 1.0;
+  map_msg.data.resize(_GLX_SIZE * _GLY_SIZE, -1);
+  for (int i = 0; i < _GLX_SIZE * _GLY_SIZE; i++)
+  {
+    map_msg.data[i] = _map[i];
+  }
+  std::cout << "Inflation map published." << std::endl;
+  while (1)
+  {
+    pub_inflation.publish(map_msg);
+    sleep(2);
+  }
+
+}
+
 void RRTSTARGRID::init(Point start, Point goal)
 {
 
 }
+void RRTSTARGRID::initStartNode()
+{
+  //起始点初始化
+  if (_startNode != nullptr)
+  {
+    delete _startNode;
+    _startNode = nullptr;
+  }
+  _startNode = new Node;
+}
+void RRTSTARGRID::initGoalNode()
+{
+  //目标点初始化
+  if (_goalNode != nullptr)
+  {
+    delete _goalNode;
+    _goalNode = nullptr;
+  }
+  _goalNode = new Node;
+}
+
 void RRTSTARGRID::setStartPoint(Node& start)
 {
+  initStartNode();
   _startNode->position.x = start.position.x;
   _startNode->position.y = start.position.y;
   _startFlag = true;
@@ -27,6 +84,7 @@ void RRTSTARGRID::setStartPoint(Node& start)
 }
 void RRTSTARGRID::setGoal(Node& goal)
 {
+  initGoalNode();
   _goalNode->position.x = goal.position.x;
   _goalNode->position.y = goal.position.y;
   _goalFlag = true;
@@ -43,23 +101,48 @@ bool RRTSTARGRID::isInitFinished()
   }
   return false;
 }
+
+bool RRTSTARGRID::isMapFinished()
+{
+  return _mapFlag;
+}
+
+void RRTSTARGRID::releaseNodeList()
+{
+  if (_startNode != nullptr)
+  {
+    delete _startNode;
+    _startNode = nullptr;
+  }
+  if (_goalNode != nullptr)
+  {
+    delete _goalNode;
+    _goalNode = nullptr;
+  }
+
+  //从这里开始，清空_node_list
+  //将_startNode 和 _goalNode 置空,并从_node_list中剔除该节点
+  _node_list.erase(_node_list.begin());
+  _node_list.erase(_node_list.end() - 1);
+  for (long unsigned int i = 0; i < _node_list.size(); i++)
+  {
+    if (_node_list[i]!= nullptr)
+    {
+      delete _node_list[i];
+      _node_list[i] = nullptr;
+    }
+  }
+  _node_list.clear();
+  _node_list.shrink_to_fit();
+}
+
 void RRTSTARGRID::resetInitStartGoal()
 {
   _startFlag = false;
   _goalFlag = false;
-  // std::cout << "_node_list.capacity() = " << _node_list.capacity() << std::endl;
-  for (long unsigned int i = 0; i < _node_list.size(); i++)
-  {
-    delete _node_list[i];
-    _node_list[i] = nullptr;
-  }
 
-  // std::cout << "_node_list.capacity() = " << _node_list.capacity() << std::endl;
+  releaseNodeList();
 
-  _node_list.clear();
-  // std::cout << "_node_list.capacity() = " << _node_list.capacity() << std::endl;
-  _node_list.shrink_to_fit();
-  // std::cout << "_node_list.capacity() = " << _node_list.capacity() << std::endl;
   _path.clear();
   _allPath.clear();
 
@@ -229,7 +312,7 @@ double RRTSTARGRID::calNodeDis(Node* node1, Node* node2)
 
 void RRTSTARGRID::plan()
 {
-  ros::Publisher pub_checked = _n.advertise<nav_msgs::Odometry>("/point_checked", 1);
+  // ros::Publisher pub_checked = _n.advertise<nav_msgs::Odometry>("/point_checked", 1);
   _node_list.push_back(_startNode);
 
   while(1)
@@ -294,7 +377,7 @@ void RRTSTARGRID::plan()
     point.header.frame_id = "map";
     point.header.stamp = ros::Time::now();
     point.child_frame_id = "base_link";
-    pub_checked.publish(point);
+    // pub_checked.publish(point);
   }
   // std::cout << LOG << "find valid path" << std::endl;
 }
@@ -303,7 +386,7 @@ void RRTSTARGRID::broadcastPath()
 {
   int count = _node_list.size();
   Node* currentNode = _goalNode;
-  while (currentNode->parent != nullptr)
+  while (currentNode != nullptr)    //从终点开始回溯赋值，直到赋值完最后一个点（起始点）
   {
     // std::cout << LOG << "currentNode.parent = " << currentNode->parent << std::endl;
     // std::cout << LOG << "currentNode.parent->position.x  = " << currentNode->parent->position.x << std::endl;
@@ -313,13 +396,13 @@ void RRTSTARGRID::broadcastPath()
     p.x = currentNode->position.x;
     p.y = currentNode->position.y;
     p.z = currentNode->position.z;
-    if (currentNode->parent == 0)
-    return;
+
     currentNode = currentNode->parent;
 
     _path.push_back(p);
     count--;
   }
+
   return;
 
 }
